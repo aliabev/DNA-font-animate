@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Анимация "САНСАД" (интерактивная)</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<script>
+// Глобальные переменные
+let canvas, ctx;
+let offCanvas, offCtx;
+let particles = [];
+
+// Параметры, которые можно настраивать
+const gap = 4;              // шаг выборки пикселей (чем меньше, тем плотнее частицы)
+const threshold = 150;      // порог «белизны» пикселей (0..255)
+const springStrength = 0.05; // сила притяжения к целевой позиции
+const friction = 0.90;       // коэффициент замедления (0..1)
+
+// Параметры интерактивности
+const repulsionRadius = 60; // радиус отталкивания
+const repulsionForce = 0.7; // сила отталкивания
+
+// Объект для хранения координат курсора
+let mouse = {
+  x: 0,
+  y: 0,
+  active: false
+};
+
+/**
+ * Создаём частицы на основе слова «САНСАД», нарисованного на offscreen-холсте.
+ */
+function createTextParticles() {
+  // Настраиваем размеры offCanvas
+  offCanvas.width = canvas.width;
+  offCanvas.height = canvas.height;
+
+  // Очищаем offscreen-холст
+  offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
+
+  // Заливаем фон чёрным
+  offCtx.fillStyle = 'black';
+  offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+
+  // Рисуем слово «САНСАД» белым по центру
+  offCtx.fillStyle = 'white';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  const fontSize = Math.min(canvas.width, canvas.height) / 4;
+  offCtx.font = `bold ${fontSize}px impact`;
+  offCtx.fillText('GOODS', offCanvas.width / 2, offCanvas.height / 2);
+
+  // Извлекаем данные пикселей
+  const imageData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+  const data = imageData.data;
+
+  // Очищаем массив частиц
+  particles = [];
+
+  // Перебираем пиксели с шагом gap
+  for (let y = 0; y < offCanvas.height; y += gap) {
+    for (let x = 0; x < offCanvas.width; x += gap) {
+      const index = (y * offCanvas.width + x) * 4;
+      const r = data[index]; // красный канал
+      // Проверяем, является ли пиксель достаточно «белым»
+      if (r > threshold) {
+        particles.push({
+          x: x + Math.random() * 10 - 5, // начальные координаты (небольшой разброс)
+          y: y + Math.random() * 10 - 5,
+          tx: x,                        // целевые координаты
+          ty: y,
+          vx: 0,                        // скорость по x
+          vy: 0                         // скорость по y
+        });
+      }
+    }
+  }
+
+  console.log('Количество частиц:', particles.length);
+}
+
+/**
+ * Функция для подгонки размеров canvas и пересоздания частиц.
+ */
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  createTextParticles();
+}
+
+/**
+ * Основной цикл анимации.
+ */
+function animate() {
+  // Заливаем основной холст чёрным
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Обновляем каждую частицу
+  particles.forEach(p => {
+    // Если мышь активна, отталкиваем частицу, если она в радиусе repulsionRadius
+    if (mouse.active) {
+      let dxm = p.x - mouse.x;
+      let dym = p.y - mouse.y;
+      let dist = Math.sqrt(dxm * dxm + dym * dym);
+      if (dist < repulsionRadius) {
+        // Вычисляем силу отталкивания
+        const force = (repulsionRadius - dist) / repulsionRadius * repulsionForce;
+        // Прибавляем к скорости частицы
+        p.vx += (dxm / dist) * force;
+        p.vy += (dym / dist) * force;
+      }
+    }
+
+    // «Пружинное» притяжение к целевой точке
+    let dx = p.tx - p.x;
+    let dy = p.ty - p.y;
+    p.vx += dx * springStrength;
+    p.vy += dy * springStrength;
+
+    // Применяем фрикцию
+    p.vx *= friction;
+    p.vy *= friction;
+
+    // Обновляем координаты
+    p.x += p.vx;
+    p.y += p.vy;
+
+    const radius = 2;
+
+    // Рисуем частицу белым
+    ctx.beginPath();
+    ctx.fillStyle = 'white';
+    ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  requestAnimationFrame(animate);
+}
+
+/* ИНИЦИАЛИЗАЦИЯ */
+window.addEventListener('load', () => {
+  // Получаем ссылки на canvas
+  canvas = document.getElementById('canvas');
+  ctx = canvas.getContext('2d');
+
+  // Создаём offscreen-холст
+  offCanvas = document.createElement('canvas');
+  offCtx = offCanvas.getContext('2d');
+
+  // Добавляем обработчики событий мыши
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+    mouse.active = true;
+  });
+  canvas.addEventListener('mouseleave', () => {
+    mouse.active = false;
+  });
+
+  // Настраиваем холст и запускаем анимацию
+  window.addEventListener('resize', resize);
+  resize();
+  animate();
+});
+</script>
+</body>
+</html>
