@@ -25,7 +25,6 @@
 let canvas, ctx;
 let offCanvas, offCtx;
 let particles = [];
-let t = 0;  // счётчик для эффекта мерцания
 
 // Параметры, которые можно настраивать
 const gap = 4;              // шаг выборки пикселей (чем меньше, тем плотнее частицы)
@@ -143,9 +142,7 @@ function animate() {
     p.x += p.vx;
     p.y += p.vy;
 
-    // Эффект мерцания
-    const baseRadius = 2;
-    const radius = baseRadius + Math.sin(t + (p.tx + p.ty) / 100) * 1;
+    const radius = 2;
 
     // Рисуем частицу белым
     ctx.beginPath();
@@ -154,7 +151,6 @@ function animate() {
     ctx.fill();
   });
 
-  t += 0.05;
   requestAnimationFrame(animate);
 }
 
