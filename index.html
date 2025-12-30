@@ -27,7 +27,7 @@ let offCanvas, offCtx;
 let particles = [];
 
 // Параметры, которые можно настраивать
-const gap = 4;              // шаг выборки пикселей (чем меньше, тем плотнее частицы)
+const gap = 6;              // шаг выборки пикселей (чем меньше, тем плотнее частицы)
 const threshold = 150;      // порог «белизны» пикселей (0..255)
 const springStrength = 0.05; // сила притяжения к целевой позиции
 const friction = 0.90;       // коэффициент замедления (0..1)
@@ -58,13 +58,13 @@ function createTextParticles() {
   offCtx.fillStyle = 'black';
   offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
 
-  // Рисуем слово «САНСАД» белым по центру
+  // Рисуем слово белым по центру
   offCtx.fillStyle = 'white';
   offCtx.textAlign = 'center';
   offCtx.textBaseline = 'middle';
   const fontSize = Math.min(canvas.width, canvas.height) / 4;
   offCtx.font = `bold ${fontSize}px impact`;
-  offCtx.fillText('GOODS', offCanvas.width / 2, offCanvas.height / 2);
+  offCtx.fillText('ДНК Хантфлоу', offCanvas.width / 2, offCanvas.height / 2);
 
   // Извлекаем данные пикселей
   const imageData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
